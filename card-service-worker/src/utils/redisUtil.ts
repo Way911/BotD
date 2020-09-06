@@ -1,5 +1,5 @@
 const redis = require("redis");
-const client = redis.createClient();
+const client = redis.createClient(6380, process.env.REDISCACHEHOSTNAME, {auth_pass: process.env.REDISCACHEKEY, tls: {servername: process.env.REDISCACHEHOSTNAME}});
 
 export class RedisUtil {
 
@@ -12,10 +12,6 @@ export class RedisUtil {
     }
     public static async get(key: string): Promise<any> {
         return this.text(key);
-    }
-
-    public static publish(topic: string, message: string) {
-        return client.publish(topic, message);
     }
 
     public static delete(key: string) {

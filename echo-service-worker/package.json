@@ -1,0 +1,39 @@
+{
+    "name": "botd",
+    "version": "1.0.0",
+    "description": "Demonstrate the core capabilities of the Microsoft Bot Framework",
+    "author": "Generated using Microsoft Bot Builder Yeoman generator v4.9.0",
+    "license": "MIT",
+    "main": "./lib/index.js",
+    "scripts": {
+        "build": "tsc --build",
+        "lint": "tslint -c tslint.json 'src/**/*.ts'",
+        "cp-card": "mkdir -p ./lib/cards/  && cp ./src/cards/*.json ./lib/cards/",
+        "postinstall": "npm run build",
+        "start-worker": "tsc --build && node ./lib/worker.js",
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "watch": "nodemon --watch ./src -e ts --exec \"npm run start\""
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com"
+    },
+    "dependencies": {
+        "@azure/core-amqp": "latest",
+        "@azure/event-hubs": "latest",
+        "@microsoft/recognizers-text-suite": "^1.3.0",
+        "botbuilder": "~4.9.0",
+        "dotenv": "^8.2.0",
+        "lodash": "^4.17.20",
+        "redis": "^3.0.2",
+        "replace": "~1.1.1",
+        "restify": "~8.5.1",
+        "serialize-instance": "^1.0.5"
+    },
+    "devDependencies": {
+        "@types/restify": "8.4.2",
+        "nodemon": "~2.0.4",
+        "tslint": "~6.1.2",
+        "typescript": "~3.9.2"
+    }
+}

@@ -1,17 +1,26 @@
+import * as path from 'path';
+
+import { config } from 'dotenv';
+const ENV_FILE = path.join(__dirname, '..', '.env');
+config({ path: ENV_FILE });
+
 const redis = require("redis");
 
-const subscriber = redis.createClient();
-const redisCli = redis.createClient();
-import { EchoService } from '../services/echoService';
-import { BaseService } from "../services/baseService";
-import { CardService } from "../services/cardService";
-import { FlowService } from "../services/flowService";
-import { CustomizedDialog, Session, DialogState } from '../models/session'
+const subscriber = redis.createClient(6380, process.env.REDISCACHEHOSTNAME, {auth_pass: process.env.REDISCACHEKEY, tls: {servername: process.env.REDISCACHEHOSTNAME}});
+const redisCli = redis.createClient(6380, process.env.REDISCACHEHOSTNAME, {auth_pass: process.env.REDISCACHEKEY, tls: {servername: process.env.REDISCACHEHOSTNAME}});
+import { EchoService } from './services/echoService';
+import { BaseService } from "./services/baseService";
+import { CardService } from "./services/cardService";
+import { FlowService } from "./services/flowService";
+import { CustomizedDialog, Session, DialogState } from './models/session'
 
-import { RedisUtil } from '../utils/redisUtil'
+import { RedisUtil } from './utils/redisUtil'
 
+const connectionString = process.env["EVENTHUB_CONNECTION_STRING"] || "";
+const eventHubName = process.env["EVENTHUB_NAME"] || "";
+const consumerGroup = process.env["CONSUMER_GROUP_NAME"] || "";
 
-export class DemoWorker {
+export class Worker {
 
   public static async listen() {
     subscriber.on("subscribe", function (channel, count) {

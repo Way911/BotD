@@ -7,7 +7,10 @@
     "rootDir": "./src",
     "sourceMap": true,
     "incremental": true,
-    "tsBuildInfoFile": "./lib/.tsbuildinfo"
+    "tsBuildInfoFile": "./lib/.tsbuildinfo",
+
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     
   },
   "include": [

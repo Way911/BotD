@@ -1,17 +1,18 @@
 import { Activity, MessageFactory, TurnContext } from 'botbuilder';
 import { RedisUtil } from './redisUtil'
+import { EventHubUtil } from './eventHubUtil'
 import { SessionUtil } from './sessionUtil';
-import { CustomizedDialog } from '../models/session';
+import { CustomizedDialog, DialogState } from '../models/session'
 
 export class InboundUtil {
 
     public static async handleNewInputActivity(context: TurnContext) {
         const stopDialog = this.terminateDialog(context.activity);
-        if(stopDialog) {
-           return await context.sendActivity('Your user session is reset, pls start from beginning');
+        if (stopDialog) {
+            return await context.sendActivity('Your user session is reset, pls start from beginning');
         } else {
-            const dialogId = await this.setupCustomizedDialog(context);
-            this.sendToWorker(dialogId);
+            const { dialogId, dialog } = await this.setupCustomizedDialog(context);
+            this.sendToWorker(dialogId, dialog);
         }
     }
 
@@ -32,7 +33,7 @@ export class InboundUtil {
 
     }
 
-    private static async setupCustomizedDialog(context: TurnContext): Promise<string> {
+    private static async setupCustomizedDialog(context: TurnContext): Promise<any> {
         const dialogId = RedisUtil.getDialogKey(context.activity.recipient.id);
         const conversationReference = TurnContext.getConversationReference(context.activity);
         const dialog: CustomizedDialog = {
@@ -44,22 +45,51 @@ export class InboundUtil {
             // update dialog
             console.log('found dialog');
             dialog.userSession = SessionUtil.updateSession(context.activity, dialogInRedis.userSession)
-            RedisUtil.set(dialogId, dialog, 60 * 60);
+            
         } else { // new dialog
             console.log('new dialog');
             dialog.userSession = SessionUtil.newSession(context.activity)
-            RedisUtil.set(dialogId, dialog, 60 * 60);
+            
         }
-        return dialogId;
+        return { dialogId, dialog };
     }
 
-    private static sendToWorker(dialogId: string) {
-        RedisUtil.publish("inbound", dialogId);
+    private static sendToWorker(dialogId: string, dialog: CustomizedDialog) {
+        const session = dialog.userSession;
+        if (session.state === DialogState.NO_STATE) { // no state conversation
+            switch (session.input.value) {
+                case '1': {
+                    EventHubUtil.send('cardservice', dialogId, dialog);
+                    break;
+                }
+                case '2': {
+                    EventHubUtil.send('flowservice', dialogId, dialog);
+                    break;
+                }
+                default: {
+                    EventHubUtil.send('echoservice', dialogId, dialog);
+                }
+            }
+        } else {
+            switch (session.service) { // already in a dialog flow
+                case 'CardService': {
+                    EventHubUtil.send('cardservice', dialogId, dialog);
+                    break;
+                }
+                case 'FlowService': {
+                    EventHubUtil.send('flowservice', dialogId, dialog);
+                    break;
+                }
+                default: {
+                    EventHubUtil.send('echoservice', dialogId, dialog);
+                }
+            }
+        }
     }
 
-    private static terminateDialog(activity: Activity): boolean{
-        const stop_words = [':q'];
-        if(activity.text && (stop_words.indexOf(activity.text) > -1)) {
+    private static terminateDialog(activity: Activity): boolean {
+        const stop_words = ['quit'];
+        if (activity.text && (stop_words.indexOf(activity.text) > -1)) {
             RedisUtil.delete(RedisUtil.getDialogKey(activity.recipient.id));
             return true;
         } else {
